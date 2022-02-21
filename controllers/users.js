@@ -10,6 +10,20 @@ const getAllUsers = async (req, res) => {
 
 const registerUser = async (req, res) => {
   const body = req.body;
+
+  const existingUser = await User.findOne({
+    $or: [{
+      email: body.email
+    }, {
+      username: body.username
+    }]
+  });
+
+  if (existingUser) {
+    const field = existingUser.username === body.username ? "Username" : "Email";
+    return res.status(400).json({ error: `${field} is already taken` });
+  }
+
   const passwordHash = await bcrypt.hash(body.password, 10);
 
   const newUser = new User({
@@ -27,7 +41,7 @@ const registerUser = async (req, res) => {
     const token = jwt.sign(userForToken, JWT_SECRET);
     res.json({ token, ...userForToken });
   } catch (error) {
-    res.json({ error });
+    res.status(400).json({ error });
   }
 };
 
